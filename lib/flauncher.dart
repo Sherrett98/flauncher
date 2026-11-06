@@ -20,12 +20,15 @@
 import 'package:flauncher/custom_traversal_policy.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/launcher_state.dart';
+import 'package:flauncher/providers/sofa_state.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flauncher/widgets/apps_grid.dart';
 import 'package:flauncher/widgets/category_row.dart';
 import 'package:flauncher/widgets/launcher_alternative_view.dart';
 import 'package:flauncher/widgets/focus_aware_app_bar.dart';
+import 'package:flauncher/widgets/sofa_hero.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -42,6 +45,7 @@ class FLauncher extends StatelessWidget {
         Consumer<WallpaperService>(
           builder: (_, wallpaperService, __) => _wallpaper(context, wallpaperService)
         ),
+        const Positioned.fill(child: SofaGlow()),
         Consumer<LauncherState>(
           builder: (_, state, child) => Visibility(
             child: child!,
@@ -53,17 +57,28 @@ class FLauncher extends StatelessWidget {
           child: Scaffold(
             backgroundColor: Colors.transparent,
             appBar: FocusAwareAppBar(),
-            body: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Consumer<AppsService>(
-                builder: (context, appsService, _) {
-                  if (appsService.initialized) {
-                    return SingleChildScrollView(child: _sections(appsService.launcherSections));
+            body: Focus(
+              canRequestFocus: false,
+              skipTraversal: true,
+              onKeyEvent: (node, event) => _onHomeKey(context, event),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                child: Consumer<AppsService>(
+                  builder: (context, appsService, _) {
+                    if (appsService.initialized) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SofaHero(),
+                          Expanded(child: SingleChildScrollView(child: _sections(appsService.launcherSections))),
+                        ],
+                      );
+                    }
+                    else {
+                      return _emptyState(context);
+                    }
                   }
-                  else {
-                    return _emptyState(context);
-                  }
-                }
+                )
               )
             )
           )
@@ -72,8 +87,29 @@ class FLauncher extends StatelessWidget {
     )
   );
 
-  Widget _sections(List<LauncherSection> sections) => Column(
+  /// Play/Pause on the home screen reopens whatever was last opened from here.
+  KeyEventResult _onHomeKey(BuildContext context, KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.mediaPlayPause || key == LogicalKeyboardKey.mediaPlay) {
+      final String? last = context.read<SofaState>().lastLaunchedPackage;
+      if (last != null) {
+        context.read<AppsService>().launchPackage(last);
+        return KeyEventResult.handled;
+      }
+    }
+    return KeyEventResult.ignored;
+  }
+
+  Widget _sections(List<LauncherSection> sections) {
+    final int firstCategoryIndex = sections.indexWhere((section) => section is Category);
+    int index = -1;
+
+    return Column(
     children: sections.map((section) {
+      index++;
       final Key sectionKey = Key(section.id.toString());
       final Widget categoryWidget;
 
@@ -87,13 +123,15 @@ class FLauncher extends StatelessWidget {
           categoryWidget = CategoryRow(
               key: sectionKey,
               category: category,
-              applications: category.applications
+              applications: category.applications,
+              isFirstSection: index == firstCategoryIndex
           );
         case CategoryType.grid:
           categoryWidget = AppsGrid(
               key: sectionKey,
               category: category,
-              applications: category.applications
+              applications: category.applications,
+              isFirstSection: index == firstCategoryIndex
           );
       }
 
@@ -103,6 +141,7 @@ class FLauncher extends StatelessWidget {
       );
     }).toList(),
   );
+  }
 
   Widget _wallpaper(BuildContext context, WallpaperService wallpaperService) {
     if (wallpaperService.wallpaper != null) {
@@ -116,7 +155,7 @@ class FLauncher extends StatelessWidget {
       );
     }
     else {
-      return Container(key: const Key("background"), decoration: BoxDecoration(gradient: wallpaperService.gradient.gradient));
+      return Container(key: const Key("background"), color: SofaColors.room);
     }
   }
 

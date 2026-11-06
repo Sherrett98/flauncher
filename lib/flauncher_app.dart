@@ -19,6 +19,7 @@
 import 'package:flauncher/actions.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/launcher_state.dart';
+import 'package:flauncher/providers/sofa_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,17 +36,18 @@ class FLauncherApp extends StatelessWidget
     BackIntent()
   ]);
 
-  static const MaterialColor _swatch = MaterialColor(0xFF011526, <int, Color>{
-    50: Color(0xFF36A0FA),
-    100: Color(0xFF067BDE),
-    200: Color(0xFF045CA7),
-    300: Color(0xFF033662),
-    400: Color(0xFF022544),
-    500: Color(0xFF011526),
-    600: Color(0xFF000508),
-    700: Color(0xFF000000),
-    800: Color(0xFF000000),
-    900: Color(0xFF000000),
+  // Warm room tones for Sofa (was FLauncher's navy).
+  static const MaterialColor _swatch = MaterialColor(0xFF24201C, <int, Color>{
+    50: Color(0xFFE9C9A5),
+    100: Color(0xFFC9A27C),
+    200: Color(0xFF8C7360),
+    300: Color(0xFF3A342E),
+    400: Color(0xFF2F2A25),
+    500: Color(0xFF24201C),
+    600: Color(0xFF1B1815),
+    700: Color(0xFF14110F),
+    800: Color(0xFF0E0C0A),
+    900: Color(0xFF080706),
   });
 
   const FLauncherApp();
@@ -74,9 +76,10 @@ class FLauncherApp extends StatelessWidget
         GlobalWidgetsLocalizations.delegate
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      title: 'FLauncher',
+      title: 'Sofa',
       theme: ThemeData(
         useMaterial3: true,
+        fontFamily: 'Bricolage',
         brightness: Brightness.dark,
         primarySwatch: _swatch,
         cardColor: _swatch[300],
@@ -86,6 +89,7 @@ class FLauncherApp extends StatelessWidget
         textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: Colors.white)),
         appBarTheme: const AppBarTheme(elevation: 0, backgroundColor: Colors.transparent),
         typography: Typography.material2018(),
+        focusColor: SofaColors.paper.withOpacity(0.18),
         inputDecorationTheme: InputDecorationTheme(
           focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
           labelStyle: Typography.material2018().white.bodyMedium,

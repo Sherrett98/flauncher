@@ -20,7 +20,7 @@ import 'dart:async';
 
 import 'package:flauncher/app_image_type.dart';
 import 'package:flauncher/providers/apps_service.dart';
-import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/providers/sofa_state.dart';
 import 'package:flauncher/widgets/application_info_panel.dart';
 import 'package:flauncher/widgets/focus_keyboard_listener.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +40,7 @@ class AppCard extends StatefulWidget
   final bool autofocus;
   final void Function(AxisDirection) onMove;
   final VoidCallback onMoveEnd;
+  final FocusNode? focusNode;
 
   const AppCard({
     super.key,
@@ -48,6 +49,7 @@ class AppCard extends StatefulWidget
     required this.autofocus,
     required this.onMove,
     required this.onMoveEnd,
+    this.focusNode,
   });
 
   @override
@@ -98,7 +100,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
             transformAlignment: Alignment.center,
             transform: _scaleTransform(context),
             child: Material(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               clipBehavior: Clip.antiAlias,
               elevation: shouldHighlight ? 16 : 0,
               shadowColor: Colors.black,
@@ -107,11 +109,15 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
                 children: [
                   InkWell(
                     autofocus: widget.autofocus,
+                    focusNode: widget.focusNode,
                     focusColor: Colors.transparent,
                     child: _appImage(),
                     onTap: () => _onPressed(context, LogicalKeyboardKey.enter),
                     onLongPress: () => _onLongPress(context, LogicalKeyboardKey.enter),
                     onFocusChange: (focused) {
+                      if (focused) {
+                        _reportFocus(context);
+                      }
                       Scrollable.ensureVisible(
                         context,
                         // This specific alignment value is not only
@@ -136,31 +142,15 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
                       child: Container(color: Colors.black),
                     ),
                   ),
-                  Selector<SettingsService, bool>(
-                    selector: (_, settingsService) => settingsService.appHighlightAnimationEnabled && shouldHighlight,
-                    builder: (context, highlight, _) {
-                      if (highlight) {
-                        _animation.repeat(reverse: true);
-                        return AnimatedBuilder(
-                          animation: _animation,
-                          builder: (context, child) => IgnorePointer(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.white.withAlpha(_animation.value.round()),
-                                  width: 3
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-
-                      _animation.stop();
-                      return const SizedBox();
-                    },
-                  ),
+                  if (shouldHighlight)
+                    IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: SofaColors.paper, width: 3),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -168,6 +158,19 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
         );
       },
   );
+
+  Future<void> _reportFocus(BuildContext context) async {
+    final SofaState sofa = context.read<SofaState>();
+    Uint8List? bytes;
+    try {
+      final tuple = await _appImageLoadFuture;
+      final ImageProvider image = tuple.item2;
+      if (image is MemoryImage) {
+        bytes = image.bytes;
+      }
+    } catch (_) {}
+    sofa.setFocused(widget.application, bytes);
+  }
 
   Future<Tuple2<AppImageType, ImageProvider>> _loadAppBannerOrIcon(AppsService service) async {
     Uint8List bytes = Uint8List(0);
@@ -329,7 +332,12 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
 
       return KeyEventResult.handled;
     } else if (_validationKeys.contains(key)) {
+      context.read<SofaState>().recordLaunch(widget.application.packageName);
       context.read<AppsService>().launchApp(widget.application);
+      return KeyEventResult.handled;
+    } else if (key == LogicalKeyboardKey.contextMenu) {
+      // The Fire TV phone app can't long-press, so its Menu button opens the options.
+      _showPanel(context);
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;

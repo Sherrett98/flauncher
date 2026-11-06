@@ -24,6 +24,7 @@ import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/launcher_state.dart';
 import 'package:flauncher/providers/network_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/providers/sofa_state.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -47,6 +48,7 @@ Future<void> main() async {
             lazy: false),
         ChangeNotifierProvider(create: (_) => AppsService(fLauncherChannel, fLauncherDatabase)),
         ChangeNotifierProvider(create: (_) => LauncherState()),
+        ChangeNotifierProvider(create: (_) => SofaState(sharedPreferences)),
         ChangeNotifierProvider(create: (_) => NetworkService(fLauncherChannel)),
         ChangeNotifierProvider(
             create: (context) {

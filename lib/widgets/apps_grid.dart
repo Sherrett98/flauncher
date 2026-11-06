@@ -22,6 +22,7 @@ import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/widgets/app_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flauncher/providers/sofa_state.dart';
 
 import '../models/app.dart';
 import '../models/category.dart';
@@ -32,11 +33,13 @@ class AppsGrid extends StatelessWidget
 {
   final Category category;
   final List<App> applications;
+  final bool isFirstSection;
 
   AppsGrid({
     Key? key,
     required this.category,
     required this.applications,
+    this.isFirstSection = false,
   }) : super(key: key);
 
   @override
@@ -59,6 +62,7 @@ class AppsGrid extends StatelessWidget
               category: category,
               application: applications[index],
               autofocus: index == 0,
+              focusNode: isFirstSection && index == 0 ? context.read<SofaState>().homeNode : null,
               onMove: (direction) => _onMove(context, direction, index),
               onMoveEnd: () => _saveOrder(context)
           )

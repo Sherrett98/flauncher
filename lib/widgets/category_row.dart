@@ -21,6 +21,7 @@ import 'package:flauncher/widgets/app_card.dart';
 import 'package:flauncher/widgets/category_container_common.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flauncher/providers/sofa_state.dart';
 
 import '../models/app.dart';
 import '../models/category.dart';
@@ -30,11 +31,13 @@ class CategoryRow extends StatelessWidget
 {
   final Category category;
   final List<App> applications;
+  final bool isFirstSection;
 
   CategoryRow({
     Key? key,
     required this.category,
     required this.applications,
+    this.isFirstSection = false,
   }) : super(key: key);
 
   @override
@@ -59,6 +62,7 @@ class CategoryRow extends StatelessWidget
                   category: category,
                   application: applications[index],
                   autofocus: index == 0,
+                  focusNode: isFirstSection && index == 0 ? context.read<SofaState>().homeNode : null,
                   onMove: (direction) => _onMove(context, direction, index),
                   onMoveEnd: () => _onMoveEnd(context)
                 )

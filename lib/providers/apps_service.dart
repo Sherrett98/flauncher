@@ -256,6 +256,8 @@ class AppsService extends ChangeNotifier
     return future;
   }
 
+  Future<void> launchPackage(String packageName) => _fLauncherChannel.launchApp(packageName);
+
   Future<void> openAppInfo(App app) => _fLauncherChannel.openAppInfo(app.packageName);
 
   Future<void> uninstallApp(App app) => _fLauncherChannel.uninstallApp(app.packageName);
