@@ -6,6 +6,7 @@
 TV="${1:-192.168.0.15}"
 REPO="Sherrett98/flauncher"
 WORK="$HOME/.sofa-install"
+LM_APK="https://xdaforums.com/attachments/lm-mini-v2-apk.6368054/"
 LM_THREAD="https://xdaforums.com/t/app-firetv-noroot-launcher-manager-change-launcher-without-root.4176349/"
 
 mkdir -p "$WORK" && cd "$WORK" || exit 1
@@ -62,9 +63,15 @@ if "${A[@]}" shell pm list packages com.wolf.minilm | grep -q minilm; then
 else
   LM="$(ls -t "$HOME"/Downloads/*.apk 2>/dev/null | grep -i -E 'lm.?mini|launcher.?manager|minilm' | head -1)"
   if [ -z "$LM" ]; then
+    say "Downloading Launcher Manager Mini from XDA..."
+    if curl -fsSL -A "Mozilla/5.0" -o "$WORK/lm-mini-v2.apk" "$LM_APK" && [ "$(head -c 2 "$WORK/lm-mini-v2.apk")" = "PK" ]; then
+      LM="$WORK/lm-mini-v2.apk"
+    fi
+  fi
+  if [ -z "$LM" ]; then
     say "One manual download needed"
     echo "Download 'LM Mini v2.apk' from the first post of the XDA thread that's opening now."
-    echo "Save it to Downloads, then double-click this file again."
+    echo "Save it to Downloads, then run this installer again."
     open "$LM_THREAD"
     read -r -p "Press Return to close."; exit 0
   fi
