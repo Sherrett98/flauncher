@@ -1,3 +1,4 @@
+import 'package:flauncher/widgets/sofa_inputs_dialog.dart';
 import 'package:flauncher/widgets/settings/settings_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -47,6 +48,20 @@ class _FocusAwareAppBarState extends State<FocusAwareAppBar>
       },
       child: AppBar(
         actions: [
+          IconButton(
+            padding: const EdgeInsets.all(2),
+            constraints: const BoxConstraints(),
+            splashRadius: 20,
+            tooltip: 'Inputs',
+            icon: const Icon(Icons.input_rounded,
+              shadows: [
+                Shadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2))
+              ],
+            ),
+            onPressed: () => showDialog(context: context, builder: (_) => const SofaInputsDialog()),
+            focusColor: Theme.of(context).primaryColorLight,
+          ),
+          const SizedBox(width: 12),
           IconButton(
             padding: const EdgeInsets.all(2),
             constraints: const BoxConstraints(),

@@ -70,11 +70,12 @@ class SofaState extends ChangeNotifier {
 
   Future<void> recordLaunch(String packageName) => _prefs.setString(_lastAppKey, packageName);
 
-  /// Average the banner's colours, favouring saturated pixels so a logo's
-  /// colour wins over a white or black background, then tame it for a glow.
+  /// The banner's brand colour: group the clearly coloured pixels by hue,
+  /// take the biggest group and average it. White, black and grey
+  /// backgrounds are ignored, so Netflix comes out red rather than pink.
   static Future<Color?> _dominantColor(Uint8List bytes) async {
     try {
-      final ui.Codec codec = await ui.instantiateImageCodec(bytes, targetWidth: 24, targetHeight: 14);
+      final ui.Codec codec = await ui.instantiateImageCodec(bytes, targetWidth: 48, targetHeight: 27);
       final ui.FrameInfo frame = await codec.getNextFrame();
       final ByteData? data = await frame.image.toByteData(format: ui.ImageByteFormat.rawRgba);
       frame.image.dispose();
@@ -82,31 +83,43 @@ class SofaState extends ChangeNotifier {
         return null;
       }
 
-      double r = 0, g = 0, b = 0, total = 0;
+      const int buckets = 24; // 15 degrees of hue each
+      final List<double> weight = List.filled(buckets, 0);
+      final List<double> sr = List.filled(buckets, 0), sg = List.filled(buckets, 0), sb = List.filled(buckets, 0);
+
       for (int i = 0; i + 3 < data.lengthInBytes; i += 4) {
-        final int a = data.getUint8(i + 3);
-        if (a < 128) {
+        if (data.getUint8(i + 3) < 128) {
           continue;
         }
-        final int pr = data.getUint8(i), pg = data.getUint8(i + 1), pb = data.getUint8(i + 2);
-        final HSLColor hsl = HSLColor.fromColor(Color.fromARGB(255, pr, pg, pb));
-        // Weight: saturated, mid-light pixels count most; near-white/black barely count.
-        final double lightnessWeight = 1.0 - (hsl.lightness - 0.5).abs() * 1.6;
-        final double weight = 0.05 + hsl.saturation * lightnessWeight.clamp(0.0, 1.0);
-        r += pr * weight;
-        g += pg * weight;
-        b += pb * weight;
-        total += weight;
-      }
-      if (total == 0) {
-        return null;
+        final int r = data.getUint8(i), g = data.getUint8(i + 1), b = data.getUint8(i + 2);
+        final HSLColor hsl = HSLColor.fromColor(Color.fromARGB(255, r, g, b));
+        if (hsl.saturation < 0.3 || hsl.lightness < 0.12 || hsl.lightness > 0.88) {
+          continue; // background-ish: white, black, grey
+        }
+        final int bucket = (hsl.hue / (360 / buckets)).floor() % buckets;
+        final double w = hsl.saturation;
+        weight[bucket] += w;
+        sr[bucket] += r * w;
+        sg[bucket] += g * w;
+        sb[bucket] += b * w;
       }
 
-      final Color avg = Color.fromARGB(255, (r / total).round(), (g / total).round(), (b / total).round());
-      final HSLColor hsl = HSLColor.fromColor(avg);
+      int best = 0;
+      for (int k = 1; k < buckets; k++) {
+        if (weight[k] > weight[best]) {
+          best = k;
+        }
+      }
+      if (weight[best] < 2.0) {
+        return null; // no real colour in the banner: use the neutral glow
+      }
+
+      final Color brand = Color.fromARGB(255, (sr[best] / weight[best]).round(),
+          (sg[best] / weight[best]).round(), (sb[best] / weight[best]).round());
+      final HSLColor hsl = HSLColor.fromColor(brand);
       return hsl
-          .withLightness(hsl.lightness.clamp(0.38, 0.58))
-          .withSaturation(hsl.saturation < 0.12 ? hsl.saturation : hsl.saturation.clamp(0.35, 0.75))
+          .withLightness(hsl.lightness.clamp(0.36, 0.55))
+          .withSaturation(hsl.saturation.clamp(0.45, 0.85))
           .toColor();
     } catch (_) {
       return null;

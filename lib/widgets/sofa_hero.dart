@@ -22,7 +22,7 @@ class SofaHero extends StatelessWidget {
         builder: (context, name, _) => Padding(
           padding: const EdgeInsets.fromLTRB(32, 4, 32, 12),
           child: SizedBox(
-            height: 112,
+            height: 80,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
@@ -36,18 +36,18 @@ class SofaHero extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontFamily: 'Bricolage',
-                      fontSize: 80,
+                      fontSize: 54,
                       height: 1.0,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -2.4,
+                      letterSpacing: -1.6,
                       color: SofaColors.paper,
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   name == null ? '' : 'Press OK to open. Menu for options.',
-                  style: const TextStyle(fontFamily: 'Bricolage', fontSize: 15, color: SofaColors.mist),
+                  style: const TextStyle(fontFamily: 'Bricolage', fontSize: 13, color: SofaColors.mist),
                 ),
               ],
             ),

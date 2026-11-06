@@ -25,6 +25,9 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.tv.TvContract;
+import android.media.tv.TvInputInfo;
+import android.media.tv.TvInputManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
@@ -81,6 +84,8 @@ public class MainActivity extends FlutterActivity
                 case "checkForGetContentAvailability" -> result.success(checkForGetContentAvailability());
                 case "startAmbientMode" -> result.success(startAmbientMode());
                 case "getActiveNetworkInformation" -> result.success(getActiveNetworkInformation());
+                case "getTvInputs" -> result.success(getTvInputs());
+                case "launchTvInput" -> result.success(launchTvInput(call.arguments()));
                 default -> throw new IllegalArgumentException();
             }
         });
@@ -361,6 +366,44 @@ public class MainActivity extends FlutterActivity
             //noinspection deprecation
             return NetworkUtils.getNetworkInformation(this, connectivityManager.getActiveNetworkInfo());
         }
+    }
+
+    // Sofa: the TV's HDMI and other passthrough inputs, for the Inputs button.
+    private List<Map<String, Object>> getTvInputs()
+    {
+        List<Map<String, Object>> inputs = new ArrayList<>();
+        try {
+            TvInputManager manager = (TvInputManager) getSystemService(Context.TV_INPUT_SERVICE);
+            if (manager == null) {
+                return inputs;
+            }
+            for (TvInputInfo info : manager.getTvInputList()) {
+                if (!info.isPassthroughInput() || info.isHidden(this)) {
+                    continue;
+                }
+                CharSequence label = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    label = info.loadCustomLabel(this);
+                }
+                if (label == null || label.length() == 0) {
+                    label = info.loadLabel(this);
+                }
+                Map<String, Object> input = new HashMap<>();
+                input.put("id", info.getId());
+                input.put("name", label == null ? info.getId() : label.toString());
+                inputs.add(input);
+            }
+        }
+        catch (Exception ignored) {
+        }
+        return inputs;
+    }
+
+    private boolean launchTvInput(String inputId)
+    {
+        Intent intent = new Intent(Intent.ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput(inputId))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return tryStartActivity(intent);
     }
 
     private boolean tryStartActivity(Intent intent)

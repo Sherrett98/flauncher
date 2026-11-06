@@ -63,6 +63,11 @@ class FLauncherChannel {
     return map.cast<String, dynamic>();
   }
 
+  Future<List<Map<dynamic, dynamic>>> getTvInputs() async =>
+      (await _methodChannel.invokeListMethod<Map<dynamic, dynamic>>('getTvInputs')) ?? [];
+
+  Future<bool> launchTvInput(String inputId) async => await _methodChannel.invokeMethod('launchTvInput', inputId);
+
   Future<void> startAmbientMode() async => await _methodChannel.invokeMethod("startAmbientMode");
 
   void addAppsChangedListener(void Function(Map<String, dynamic>) listener) =>

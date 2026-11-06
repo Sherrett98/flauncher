@@ -256,6 +256,10 @@ class AppsService extends ChangeNotifier
     return future;
   }
 
+  Future<List<Map<dynamic, dynamic>>> getTvInputs() => _fLauncherChannel.getTvInputs();
+
+  Future<bool> launchTvInput(String inputId) => _fLauncherChannel.launchTvInput(inputId);
+
   Future<void> launchPackage(String packageName) => _fLauncherChannel.launchApp(packageName);
 
   Future<void> openAppInfo(App app) => _fLauncherChannel.openAppInfo(app.packageName);
