@@ -6,8 +6,6 @@
 TV="${1:-192.168.0.15}"
 REPO="Sherrett98/flauncher"
 WORK="$HOME/.sofa-install"
-LM_APK="https://xdaforums.com/attachments/lm-mini-v2-apk.6368054/"
-LM_THREAD="https://xdaforums.com/t/app-firetv-noroot-launcher-manager-change-launcher-without-root.4176349/"
 
 mkdir -p "$WORK" && cd "$WORK" || exit 1
 say() { printf "\n\033[1m%s\033[0m\n" "$*"; }
@@ -57,40 +55,25 @@ if ! echo "$OUT" | grep -q Success; then
 fi
 echo "Sofa installed."
 
-# 4. Launcher Manager Mini, which sends the Home button to Sofa
-if "${A[@]}" shell pm list packages com.wolf.minilm | grep -q minilm; then
-  echo "Launcher Manager Mini is already on the TV."
+# 4. Home on Fire, which sends the Home button to Sofa
+#    (Launcher Manager Mini's triggers don't fire on this TV's Fire OS build.)
+if "${A[@]}" shell pm list packages io.github.toolicious.homeonfire | grep -q homeonfire; then
+  say "Done. Sofa is updated."
+  echo "Home on Fire is already set up, so nothing else to do. Press Home to see the new version."
 else
-  LM="$(ls -t "$HOME"/Downloads/*.apk 2>/dev/null | grep -i -E 'lm.?mini|launcher.?manager|minilm' | head -1)"
-  if [ -z "$LM" ]; then
-    say "Downloading Launcher Manager Mini from XDA..."
-    if curl -fsSL -A "Mozilla/5.0" -o "$WORK/lm-mini-v2.apk" "$LM_APK" && [ "$(head -c 2 "$WORK/lm-mini-v2.apk")" = "PK" ]; then
-      LM="$WORK/lm-mini-v2.apk"
-    fi
-  fi
-  if [ -z "$LM" ]; then
-    say "One manual download needed"
-    echo "Download 'LM Mini v2.apk' from the first post of the XDA thread that's opening now."
-    echo "Save it to Downloads, then run this installer again."
-    open "$LM_THREAD"
-    read -r -p "Press Return to close."; exit 0
-  fi
-  say "Installing Launcher Manager Mini ($(basename "$LM"))..."
-  "${A[@]}" install -r "$LM" | grep -q Success || fail "Couldn't install $LM."
+  "${A[@]}" uninstall com.wolf.minilm >/dev/null 2>&1
+  say "Installing Home on Fire..."
+  curl -fL --progress-bar -o home-on-fire.apk https://github.com/toolicious/home-on-fire/releases/latest/download/home-on-fire.apk \
+    || fail "Couldn't download Home on Fire."
+  "${A[@]}" install -r home-on-fire.apk | grep -q Success || fail "Couldn't install Home on Fire."
+  "${A[@]}" shell pm grant io.github.toolicious.homeonfire android.permission.WRITE_SECURE_SETTINGS
+  "${A[@]}" shell am start -n io.github.toolicious.homeonfire/.MainActivity >/dev/null
+  say "Last bit, on the TV with the phone app:"
+  echo "Home on Fire is now open on the TV."
+  echo "  1. Switch on Accessibility service."
+  echo "  2. Choose target app: Sofa."
+  echo "  3. Switch on Replace Home button and Launch on boot, then press Home."
 fi
-
-say "Giving Launcher Manager Mini its permissions..."
-"${A[@]}" shell appops set com.wolf.minilm SYSTEM_ALERT_WINDOW allow
-"${A[@]}" shell pm grant com.wolf.minilm android.permission.READ_LOGS
-"${A[@]}" shell dumpsys deviceidle whitelist +com.wolf.minilm >/dev/null
-"${A[@]}" shell am force-stop com.wolf.minilm
-"${A[@]}" shell monkey -p com.wolf.minilm -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
-
-say "Last bit, on the TV with the phone app:"
-echo "Launcher Manager Mini is now open on the TV."
-echo "  1. Choose My Launcher and pick Sofa."
-echo "  2. Tick Launch on Boot."
-echo "  3. Turn the custom launcher on, then press Home."
 echo
 echo "To update Sofa later, just run this again."
 read -r -p "Press Return to close."
